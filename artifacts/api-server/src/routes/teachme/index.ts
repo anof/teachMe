@@ -24,7 +24,7 @@ router.post("/teachme/books", async (req, res) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-pro",
       contents: [
         {
           role: "user",
@@ -61,7 +61,6 @@ Only return valid JSON, no other text.`,
       config: {
         maxOutputTokens: 8192,
         responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
@@ -175,7 +174,7 @@ router.post(
 
     try {
       const stream = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
+        model: "gemini-3-flash-preview",
         contents: [
           {
             role: "user",

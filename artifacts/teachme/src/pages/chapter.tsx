@@ -2,7 +2,7 @@ import { useEffect, useRef, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { ArrowRight, BookOpen, CheckCircle2, PlayCircle, Loader2 } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, PlayCircle } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
 import { Layout } from "@/components/layout";
 import { useExplainChapterStream } from "@/hooks/use-stream";
@@ -13,7 +13,7 @@ export default function ChapterExplain() {
   const bottomRef = useRef<HTMLDivElement>(null);
   
   const { selectedBook, bookDetails } = useAppStore();
-  const { text, isStreaming, isDone, error, startStream } = useExplainChapterStream();
+  const { text, isWaiting, isStreaming, isDone, error, startStream } = useExplainChapterStream();
 
   const details = bookId ? bookDetails[bookId] : null;
   
@@ -82,6 +82,37 @@ export default function ChapterExplain() {
                 Retry
               </button>
             </div>
+          ) : isWaiting ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-32 gap-8"
+            >
+              {/* Animated bars */}
+              <div className="flex items-end gap-1.5 h-10">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 rounded-full bg-primary"
+                    animate={{ height: ["16px", "40px", "16px"] }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      delay: i * 0.15,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-sm uppercase tracking-widest text-muted-foreground">
+                  Preparing explanation
+                </p>
+                <p className="text-xs text-muted-foreground/50">
+                  Chapter {chapter?.number} · {chapter?.title}
+                </p>
+              </div>
+            </motion.div>
           ) : (
             <div className="prose-teachme">
               <ReactMarkdown>{text}</ReactMarkdown>

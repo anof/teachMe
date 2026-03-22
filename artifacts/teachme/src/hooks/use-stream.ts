@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 
 export function useExplainChapterStream() {
   const [text, setText] = useState("");
+  const [isWaiting, setIsWaiting] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11,7 +12,8 @@ export function useExplainChapterStream() {
     chapterId: string, 
     body: { bookTitle: string; bookAuthor: string; chapterTitle: string; chapterNumber: number }
   ) => {
-    setIsStreaming(true);
+    setIsWaiting(true);
+    setIsStreaming(false);
     setText("");
     setIsDone(false);
     setError(null);
@@ -36,24 +38,26 @@ export function useExplainChapterStream() {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n\n');
-        // Keep the last incomplete chunk in the buffer
         buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const dataStr = line.slice(6).trim();
             if (!dataStr) continue;
-            
+
             if (dataStr === "[DONE]") {
               setIsDone(true);
               continue;
             }
-            
+
             try {
               const data = JSON.parse(dataStr);
               if (data.done) {
                 setIsDone(true);
               } else if (data.content) {
+                // First content chunk — switch from waiting to streaming
+                setIsWaiting(false);
+                setIsStreaming(true);
                 setText(prev => prev + data.content);
               }
             } catch (e) {
@@ -63,12 +67,14 @@ export function useExplainChapterStream() {
         }
       }
     } catch (err) {
+      setIsWaiting(false);
       setError(err instanceof Error ? err.message : "An unknown error occurred during transmission.");
     } finally {
+      setIsWaiting(false);
       setIsStreaming(false);
       setIsDone(true);
     }
   }, []);
 
-  return { text, isStreaming, isDone, error, startStream };
+  return { text, isWaiting, isStreaming, isDone, error, startStream };
 }
