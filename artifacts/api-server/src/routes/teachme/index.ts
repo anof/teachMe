@@ -219,4 +219,63 @@ Write in flowing prose (not bullet points). Make it engaging and clear. Be thoro
   }
 );
 
+router.post(
+  "/teachme/books/:bookId/chapters/:chapterId/chat",
+  async (req, res) => {
+    const { bookTitle, bookAuthor, chapterTitle, chapterNumber, chapterContent, messages, question } = req.body;
+
+    if (!bookTitle || !chapterTitle || !question) {
+      res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
+    const history = Array.isArray(messages) ? messages : [];
+
+    const systemPrompt = `You are a knowledgeable tutor helping a student understand Chapter ${chapterNumber}: "${chapterTitle}" from the book "${bookTitle}" by ${bookAuthor}.
+
+Here is the explanation of this chapter that the student just read:
+---
+${chapterContent || "No explanation available."}
+---
+
+Answer the student's questions clearly and concisely, building on first principles. Stay focused on the chapter content and the book's broader ideas. If a question goes beyond this chapter, briefly acknowledge that and redirect to what this chapter covers. Be conversational and encouraging.`;
+
+    try {
+      const contents = [
+        ...history.map((m: { role: string; content: string }) => ({
+          role: m.role === "user" ? "user" : "model",
+          parts: [{ text: m.content }],
+        })),
+        { role: "user", parts: [{ text: question }] },
+      ];
+
+      const stream = await ai.models.generateContentStream({
+        model: "gemini-3-flash-preview",
+        systemInstruction: systemPrompt,
+        contents,
+        config: { maxOutputTokens: 2048 },
+      });
+
+      for await (const chunk of stream) {
+        const text = chunk.text;
+        if (text) {
+          res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+        }
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } catch (err) {
+      req.log.error({ err }, "Error in chapter chat");
+      res.write(`data: ${JSON.stringify({ error: "Failed to respond" })}\n\n`);
+      res.end();
+    }
+  }
+);
+
 export default router;

@@ -129,6 +129,32 @@
   @apply text-primary;
 }
 
+/* Chat bubble prose — compact version for Q&A messages */
+.prose-chat {
+  @apply prose-invert max-w-none text-sm leading-relaxed;
+  --tw-prose-body: hsl(var(--foreground) / 0.9);
+  --tw-prose-headings: hsl(var(--primary));
+  --tw-prose-bold: hsl(var(--foreground));
+}
+.prose-chat p {
+  @apply mb-2 last:mb-0 text-sm leading-relaxed text-foreground/90;
+}
+.prose-chat strong {
+  @apply text-white font-medium;
+}
+.prose-chat ul, .prose-chat ol {
+  @apply my-2 pl-4;
+}
+.prose-chat ul > li, .prose-chat ol > li {
+  @apply text-foreground/85 my-1 text-sm;
+}
+.prose-chat ul > li::marker {
+  @apply text-primary;
+}
+.prose-chat code {
+  @apply bg-white/10 px-1.5 py-0.5 rounded text-xs;
+}
+
 /* Animated background mesh */
 .bg-mesh {
   background-image: 
