@@ -256,17 +256,21 @@ RULES:
 5. Never talk about yourself or your capabilities.`;
 
     try {
-      const contents = [
-        ...history.map((m: { role: string; content: string }) => ({
-          role: m.role === "user" ? "user" : "model",
-          parts: [{ text: m.content }],
-        })),
-        { role: "user", parts: [{ text: question }] },
-      ];
+      // Embed the full context directly into the first user message so it is
+      // guaranteed to be seen regardless of whether systemInstruction is supported.
+      const firstUserText = `${systemPrompt}\n\n---\n\nStudent question: ${history.length === 0 ? question : history[0].content}`;
+
+      const historyTurns = history.map((m: { role: string; content: string }, i: number) => ({
+        role: m.role === "user" ? "user" : "model",
+        parts: [{ text: i === 0 ? firstUserText : m.content }],
+      }));
+
+      const contents = history.length === 0
+        ? [{ role: "user", parts: [{ text: firstUserText }] }]
+        : [...historyTurns, { role: "user", parts: [{ text: question }] }];
 
       const stream = await ai.models.generateContentStream({
         model: "gemini-3-flash-preview",
-        systemInstruction: systemPrompt,
         contents,
         config: { maxOutputTokens: 2048 },
       });
