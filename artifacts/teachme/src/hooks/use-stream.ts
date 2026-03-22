@@ -7,16 +7,28 @@ export function useExplainChapterStream() {
   const [isDone, setIsDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use this when we already have the explanation stored — show it instantly.
+  const initializeWithText = useCallback((savedText: string) => {
+    setText(savedText);
+    setIsWaiting(false);
+    setIsStreaming(false);
+    setIsDone(true);
+    setError(null);
+  }, []);
+
   const startStream = useCallback(async (
-    bookId: string, 
-    chapterId: string, 
-    body: { bookTitle: string; bookAuthor: string; chapterTitle: string; chapterNumber: number }
+    bookId: string,
+    chapterId: string,
+    body: { bookTitle: string; bookAuthor: string; chapterTitle: string; chapterNumber: number },
+    onComplete?: (fullText: string) => void
   ) => {
     setIsWaiting(true);
     setIsStreaming(false);
     setText("");
     setIsDone(false);
     setError(null);
+
+    let accumulated = "";
 
     try {
       const res = await fetch(`/api/teachme/books/${bookId}/chapters/${chapterId}/explain`, {
@@ -55,16 +67,21 @@ export function useExplainChapterStream() {
               if (data.done) {
                 setIsDone(true);
               } else if (data.content) {
-                // First content chunk — switch from waiting to streaming
                 setIsWaiting(false);
                 setIsStreaming(true);
-                setText(prev => prev + data.content);
+                accumulated += data.content;
+                setText(accumulated);
               }
             } catch (e) {
               console.error("Failed to parse stream chunk", e);
             }
           }
         }
+      }
+
+      // Save the full explanation once streaming is complete
+      if (accumulated && onComplete) {
+        onComplete(accumulated);
       }
     } catch (err) {
       setIsWaiting(false);
@@ -76,5 +93,5 @@ export function useExplainChapterStream() {
     }
   }, []);
 
-  return { text, isWaiting, isStreaming, isDone, error, startStream };
+  return { text, isWaiting, isStreaming, isDone, error, startStream, initializeWithText };
 }

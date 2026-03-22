@@ -15,6 +15,10 @@ interface AppState {
   
   bookDetails: Record<string, BookWithChapters>;
   setBookDetails: (bookId: string, details: BookWithChapters) => void;
+
+  // Persisted chapter explanations — keyed by "bookId/chapterId"
+  chapterExplanations: Record<string, string>;
+  setChapterExplanation: (key: string, text: string) => void;
   
   clearSession: () => void;
 }
@@ -38,8 +42,20 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           bookDetails: { ...state.bookDetails, [bookId]: details },
         })),
+
+      chapterExplanations: {},
+      setChapterExplanation: (key, text) =>
+        set((state) => ({
+          chapterExplanations: { ...state.chapterExplanations, [key]: text },
+        })),
         
-      clearSession: () => set({ topic: '', books: [], selectedBook: null, bookDetails: {} }),
+      clearSession: () => set({
+        topic: '',
+        books: [],
+        selectedBook: null,
+        bookDetails: {},
+        chapterExplanations: {},
+      }),
     }),
     {
       name: 'teachme-storage',

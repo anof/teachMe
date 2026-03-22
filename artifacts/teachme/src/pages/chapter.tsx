@@ -16,8 +16,8 @@ export default function ChapterExplain() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState("");
 
-  const { selectedBook, bookDetails } = useAppStore();
-  const { text, isWaiting, isStreaming, isDone, error, startStream } = useExplainChapterStream();
+  const { selectedBook, bookDetails, chapterExplanations, setChapterExplanation } = useAppStore();
+  const { text, isWaiting, isStreaming, isDone, error, startStream, initializeWithText } = useExplainChapterStream();
   const { messages, isResponding, sendMessage } = useChapterChat();
 
   const details = bookId ? bookDetails[bookId] : null;
@@ -28,29 +28,48 @@ export default function ChapterExplain() {
   }, [details, chapterId]);
 
   const chapter = currentChapterIndex >= 0 ? details!.chapters[currentChapterIndex] : null;
-  const nextChapter = currentChapterIndex >= 0 && currentChapterIndex < details!.chapters.length - 1
-    ? details!.chapters[currentChapterIndex + 1]
-    : null;
+  const nextChapter =
+    currentChapterIndex >= 0 && currentChapterIndex < details!.chapters.length - 1
+      ? details!.chapters[currentChapterIndex + 1]
+      : null;
 
-  // Guard: only start the stream once per bookId+chapterId combination
+  // Key for persisting this chapter's explanation
+  const explanationKey = bookId && chapterId ? `${bookId}/${chapterId}` : null;
+
+  // Guard: only trigger once per bookId+chapterId, even across strict-mode double-mounts
   const streamStartedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!selectedBook || !details || !chapter) {
+    if (!selectedBook || !details || !chapter || !explanationKey) {
       setLocation("/");
       return;
     }
-    const key = `${bookId}/${chapterId}`;
-    if (streamStartedFor.current === key) return;
-    streamStartedFor.current = key;
 
-    startStream(bookId!, chapterId!, {
-      bookTitle: selectedBook.title,
-      bookAuthor: selectedBook.author,
-      chapterTitle: chapter.title,
-      chapterNumber: chapter.number
-    });
-  }, [bookId, chapterId, selectedBook, details, chapter, startStream, setLocation]);
+    // Already started for this chapter — do nothing
+    if (streamStartedFor.current === explanationKey) return;
+    streamStartedFor.current = explanationKey;
+
+    const saved = chapterExplanations[explanationKey];
+    if (saved) {
+      // We already have this explanation — show it instantly, no API call
+      initializeWithText(saved);
+      return;
+    }
+
+    // Stream fresh and persist when complete
+    startStream(
+      bookId!,
+      chapterId!,
+      {
+        bookTitle: selectedBook.title,
+        bookAuthor: selectedBook.author,
+        chapterTitle: chapter.title,
+        chapterNumber: chapter.number,
+      },
+      (fullText) => setChapterExplanation(explanationKey, fullText)
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [explanationKey, selectedBook, details, chapter]);
 
   // Auto-scroll while explanation streams
   useEffect(() => {
@@ -66,6 +85,10 @@ export default function ChapterExplain() {
     }
   }, [messages]);
 
+  // The authoritative explanation text — prefer the persisted version so Q&A
+  // always has full context even if the streaming state is stale
+  const explanationText = (explanationKey && chapterExplanations[explanationKey]) || text;
+
   const handleSend = useCallback(() => {
     const question = inputValue.trim();
     if (!question || isResponding || !selectedBook || !chapter) return;
@@ -77,10 +100,10 @@ export default function ChapterExplain() {
       bookAuthor: selectedBook.author,
       chapterTitle: chapter.title,
       chapterNumber: chapter.number,
-      chapterContent: text,
+      chapterContent: explanationText,
       question,
     });
-  }, [inputValue, isResponding, selectedBook, chapter, bookId, chapterId, text, sendMessage]);
+  }, [inputValue, isResponding, selectedBook, chapter, bookId, chapterId, explanationText, sendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -110,7 +133,7 @@ export default function ChapterExplain() {
           </h1>
         </motion.div>
 
-        {/* Markdown Output */}
+        {/* Explanation */}
         <div className="min-h-[50vh]">
           {error ? (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive p-6 rounded-2xl">
@@ -141,7 +164,9 @@ export default function ChapterExplain() {
               </div>
               <div className="text-center space-y-2">
                 <p className="text-sm uppercase tracking-widest text-muted-foreground">Preparing explanation</p>
-                <p className="text-xs text-muted-foreground/50">Chapter {chapter?.number} · {chapter?.title}</p>
+                <p className="text-xs text-muted-foreground/50">
+                  Chapter {chapter.number} · {chapter.title}
+                </p>
               </div>
             </motion.div>
           ) : (
@@ -155,7 +180,7 @@ export default function ChapterExplain() {
           <div ref={bottomRef} className="h-4" />
         </div>
 
-        {/* Completion State / Next Button */}
+        {/* Completion / Next Chapter */}
         <AnimatePresence>
           {isDone && !error && (
             <motion.div
@@ -198,7 +223,6 @@ export default function ChapterExplain() {
               transition={{ delay: 0.3 }}
               className="mt-16"
             >
-              {/* Section header */}
               <div className="flex items-center gap-3 mb-8">
                 <div className="flex-1 h-px bg-white/10" />
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -209,7 +233,7 @@ export default function ChapterExplain() {
               </div>
 
               {/* Messages */}
-              <div className="space-y-4 mb-6 min-h-0">
+              <div className="space-y-4 mb-6">
                 <AnimatePresence initial={false}>
                   {messages.map((msg) => (
                     <motion.div
@@ -261,7 +285,7 @@ export default function ChapterExplain() {
 
               {/* Input */}
               <div className="sticky bottom-4 z-10">
-                <div className="flex items-end gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-primary/40 focus-within:bg-white/8 transition-all shadow-xl shadow-black/20">
+                <div className="flex items-end gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-primary/40 transition-all shadow-xl shadow-black/20">
                   <textarea
                     ref={inputRef}
                     value={inputValue}
