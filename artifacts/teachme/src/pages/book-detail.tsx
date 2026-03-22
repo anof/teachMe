@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
 import { BookOpen, Sparkles, ArrowRight, Layers } from "lucide-react";
@@ -12,6 +12,7 @@ export default function BookDetail() {
   
   const { selectedBook, bookDetails, setBookDetails } = useAppStore();
   const getChapters = useGetBookChapters();
+  const fetchedRef = useRef<string | null>(null);
 
   const details = id ? bookDetails[id] : null;
 
@@ -21,7 +22,8 @@ export default function BookDetail() {
       return;
     }
 
-    if (!details && id) {
+    if (!details && id && fetchedRef.current !== id) {
+      fetchedRef.current = id;
       getChapters.mutate(
         { 
           bookId: id, 
@@ -37,7 +39,8 @@ export default function BookDetail() {
         }
       );
     }
-  }, [id, selectedBook, details, getChapters, setBookDetails, setLocation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selectedBook?.id, details]);
 
   if (!selectedBook) return null;
 

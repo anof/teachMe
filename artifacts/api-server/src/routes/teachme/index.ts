@@ -58,7 +58,11 @@ Only return valid JSON, no other text.`,
           ],
         },
       ],
-      config: { maxOutputTokens: 8192, responseMimeType: "application/json" },
+      config: {
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
 
     const text = response.text ?? "[]";
@@ -124,7 +128,11 @@ Only return valid JSON, no other text.`,
           ],
         },
       ],
-      config: { maxOutputTokens: 8192, responseMimeType: "application/json" },
+      config: {
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
 
     const text = response.text ?? "{}";
