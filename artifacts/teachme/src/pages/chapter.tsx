@@ -32,11 +32,18 @@ export default function ChapterExplain() {
     ? details!.chapters[currentChapterIndex + 1]
     : null;
 
+  // Guard: only start the stream once per bookId+chapterId combination
+  const streamStartedFor = useRef<string | null>(null);
+
   useEffect(() => {
     if (!selectedBook || !details || !chapter) {
       setLocation("/");
       return;
     }
+    const key = `${bookId}/${chapterId}`;
+    if (streamStartedFor.current === key) return;
+    streamStartedFor.current = key;
+
     startStream(bookId!, chapterId!, {
       bookTitle: selectedBook.title,
       bookAuthor: selectedBook.author,

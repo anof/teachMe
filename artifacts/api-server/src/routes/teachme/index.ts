@@ -180,19 +180,18 @@ router.post(
             role: "user",
             parts: [
               {
-                text: `You are an expert teacher who explains complex ideas from first principles in clear, accessible language.
+                text: `You are a sharp, concise teacher who explains ideas from first principles. No padding, no filler.
 
-Explain Chapter ${chapterNumber}: "${chapterTitle}" from the book "${bookTitle}" by ${bookAuthor}.
+Explain Chapter ${chapterNumber}: "${chapterTitle}" from "${bookTitle}" by ${bookAuthor}.
 
-Your explanation should:
-1. Start with the core question or problem this chapter addresses
-2. Build understanding from the ground up - assume the reader is intelligent but unfamiliar with technical jargon
-3. Explain every important concept in simple, everyday terms (like explaining to a curious friend)
-4. Use concrete analogies and real-world examples to illustrate abstract ideas
-5. Cover the key insights and mental models introduced in this chapter
-6. End with the main takeaway and how this connects to the book's bigger picture
+Rules:
+- Open directly with the core problem or insight — no preamble
+- Build from first principles: assume smart reader, zero jargon
+- Use one or two concrete analogies where they sharpen understanding
+- Cover only the chapter's essential ideas — cut everything else
+- Close with the single most important takeaway in one sentence
 
-Write in flowing prose (not bullet points). Make it engaging and clear. Be thorough - this is a deep dive, aim for 600-1000 words.`,
+Write in tight prose. Target 300-400 words. Every sentence must earn its place.`,
               },
             ],
           },
@@ -236,14 +235,19 @@ router.post(
 
     const history = Array.isArray(messages) ? messages : [];
 
-    const systemPrompt = `You are a knowledgeable tutor helping a student understand Chapter ${chapterNumber}: "${chapterTitle}" from the book "${bookTitle}" by ${bookAuthor}.
+    const systemPrompt = `You are a tutor. The student just read an explanation of Chapter ${chapterNumber}: "${chapterTitle}" from "${bookTitle}" by ${bookAuthor}.
 
-Here is the explanation of this chapter that the student just read:
+The explanation they read:
 ---
-${chapterContent || "No explanation available."}
+${chapterContent || "(not available)"}
 ---
 
-Answer the student's questions clearly and concisely, building on first principles. Stay focused on the chapter content and the book's broader ideas. If a question goes beyond this chapter, briefly acknowledge that and redirect to what this chapter covers. Be conversational and encouraging.`;
+STRICT RULES:
+1. Only answer questions about this specific chapter and its ideas.
+2. Base every answer on the explanation text above and the book's content.
+3. If asked anything unrelated — your capabilities, other topics, general questions — respond only with: "I can only help with questions about this chapter."
+4. Be direct and concise. No fluff, no excessive caveats.
+5. Never discuss yourself, your training, or what you can or cannot do.`;
 
     try {
       const contents = [
