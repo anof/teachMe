@@ -8,6 +8,7 @@ interface AppState {
   
   books: Book[];
   setBooks: (books: Book[]) => void;
+  appendBooks: (books: Book[]) => void;
   
   selectedBook: Book | null;
   setSelectedBook: (book: Book | null) => void;
@@ -26,14 +27,16 @@ export const useAppStore = create<AppState>()(
       
       books: [],
       setBooks: (books) => set({ books }),
+      appendBooks: (newBooks) =>
+        set((state) => ({ books: [...state.books, ...newBooks] })),
       
       selectedBook: null,
       setSelectedBook: (selectedBook) => set({ selectedBook }),
       
       bookDetails: {},
-      setBookDetails: (bookId, details) => 
-        set((state) => ({ 
-          bookDetails: { ...state.bookDetails, [bookId]: details } 
+      setBookDetails: (bookId, details) =>
+        set((state) => ({
+          bookDetails: { ...state.bookDetails, [bookId]: details },
         })),
         
       clearSession: () => set({ topic: '', books: [], selectedBook: null, bookDetails: {} }),

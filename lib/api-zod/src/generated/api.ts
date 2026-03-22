@@ -20,6 +20,10 @@ export const HealthCheckResponse = zod.object({
  */
 export const FindBooksBody = zod.object({
   topic: zod.string(),
+  exclude: zod
+    .array(zod.string())
+    .optional()
+    .describe("List of book titles to exclude from results"),
 });
 
 export const FindBooksResponseItem = zod.object({

@@ -15,7 +15,12 @@ router.post("/teachme/books", async (req, res) => {
     return;
   }
 
-  const { topic } = parsed.data;
+  const { topic, exclude = [] } = parsed.data;
+
+  const excludeClause =
+    exclude.length > 0
+      ? `\n\nDo NOT include these books (they have already been shown):\n${exclude.map((t) => `- ${t}`).join("\n")}`
+      : "";
 
   try {
     const response = await ai.models.generateContent({
@@ -25,13 +30,15 @@ router.post("/teachme/books", async (req, res) => {
           role: "user",
           parts: [
             {
-              text: `You are a learning assistant that recommends foundational, first-principles books. 
-              
-Find 4-5 of the most important, widely-regarded books that cover the topic of "${topic}" from first principles. 
-Focus on books that:
-- Explain fundamentals clearly
-- Are considered classics or highly influential in their field
-- Are suitable for deep learning, not surface-level introductions
+              text: `You are a learning assistant that recommends books on "${topic}" from first principles.
+
+SELECTION CRITERIA (in strict priority order):
+1. RECENCY: Strongly prefer books published in 2020 or later. Books from 2015–2019 are acceptable. Only include older books if they are truly irreplaceable classics with no modern equivalent.
+2. FIRST PRINCIPLES: Prioritize books that build knowledge from the ground up — deriving understanding from foundational truths rather than presenting untested opinions or speculative frameworks.
+3. EVIDENCE-BASED: Prefer books grounded in empirical research, rigorous practice, or proven methodologies over purely theoretical or trend-driven content.
+4. DEPTH: Choose books that reward careful reading and teach lasting mental models, not surface-level summaries or listicles.
+
+Find exactly 5 books matching these criteria. Return them ordered from most recent to least recent.${excludeClause}
 
 Return a JSON array with exactly this structure (no markdown, just raw JSON):
 [
@@ -40,7 +47,7 @@ Return a JSON array with exactly this structure (no markdown, just raw JSON):
     "title": "Book Title",
     "author": "Author Name",
     "year": "Publication Year",
-    "summary": "2-3 sentence summary explaining what this book teaches and why it's foundational for this topic",
+    "summary": "2-3 sentence summary explaining what this book teaches, why it builds understanding from first principles, and what makes it exceptional",
     "keyPrinciples": ["Principle 1", "Principle 2", "Principle 3"],
     "difficulty": "Beginner|Intermediate|Advanced"
   }
@@ -197,7 +204,9 @@ Write in flowing prose (not bullet points). Make it engaging and clear. Be thoro
       res.end();
     } catch (err) {
       req.log.error({ err }, "Error explaining chapter");
-      res.write(`data: ${JSON.stringify({ error: "Failed to explain chapter" })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ error: "Failed to explain chapter" })}\n\n`
+      );
       res.end();
     }
   }

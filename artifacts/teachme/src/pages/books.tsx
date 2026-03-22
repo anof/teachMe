@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { BookOpen, Calendar, SignalHigh } from "lucide-react";
+import { BookOpen, Calendar, SignalHigh, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
 import { Layout } from "@/components/layout";
 import type { Book } from "@workspace/api-client-react";
@@ -21,7 +21,8 @@ const item = {
 
 export default function Books() {
   const [, setLocation] = useLocation();
-  const { topic, books, setSelectedBook } = useAppStore();
+  const { topic, books, setSelectedBook, appendBooks } = useAppStore();
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (!topic || books.length === 0) {
@@ -32,6 +33,28 @@ export default function Books() {
   const handleSelectBook = (book: Book) => {
     setSelectedBook(book);
     setLocation(`/books/${book.id}`);
+  };
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const response = await fetch("/api/teachme/books", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          exclude: books.map((b) => b.title),
+        }),
+      });
+      if (response.ok) {
+        const newBooks: Book[] = await response.json();
+        appendBooks(newBooks);
+      }
+    } catch (err) {
+      console.error("Failed to load more books", err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   if (!topic || books.length === 0) return null;
@@ -109,6 +132,25 @@ export default function Books() {
               </div>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Load more */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="flex justify-center mt-14"
+        >
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="group flex items-center gap-3 px-7 py-3.5 rounded-full border border-white/10 bg-white/5 text-foreground/70 text-sm font-medium tracking-wide hover:border-primary/40 hover:text-foreground hover:bg-white/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw
+              className={`w-4 h-4 transition-transform duration-500 ${loadingMore ? "animate-spin" : "group-hover:rotate-180"}`}
+            />
+            {loadingMore ? "Finding more books…" : "Show more book options"}
+          </button>
         </motion.div>
       </div>
     </Layout>

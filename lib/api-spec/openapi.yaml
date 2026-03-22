@@ -111,6 +111,11 @@ components:
       properties:
         topic:
           type: string
+        exclude:
+          type: array
+          items:
+            type: string
+          description: List of book titles to exclude from results
       required:
         - topic
     Book:

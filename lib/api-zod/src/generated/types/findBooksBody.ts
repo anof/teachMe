@@ -8,4 +8,6 @@
 
 export interface FindBooksBody {
   topic: string;
+  /** List of book titles to exclude from results */
+  exclude?: string[];
 }
