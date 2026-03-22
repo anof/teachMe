@@ -24,7 +24,7 @@ router.post("/teachme/books", async (req, res) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-2.5-pro",
       contents: [
         {
           role: "user",
