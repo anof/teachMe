@@ -221,7 +221,7 @@ Write in tight prose. Target 300-400 words. Every sentence must earn its place.`
 router.post(
   "/teachme/books/:bookId/chapters/:chapterId/chat",
   async (req, res) => {
-    const { bookTitle, bookAuthor, chapterTitle, chapterNumber, chapterContent, messages, question } = req.body;
+    const { bookTitle, bookAuthor, bookSummary, chapterTitle, chapterNumber, chapterContent, messages, question } = req.body;
 
     if (!bookTitle || !chapterTitle || !question) {
       res.status(400).json({ error: "Missing required fields" });
@@ -233,21 +233,27 @@ router.post(
     res.setHeader("Connection", "keep-alive");
     res.setHeader("Access-Control-Allow-Origin", "*");
 
+    req.log.info({ bookTitle, chapterTitle, chapterContentLength: (chapterContent || "").length }, "Chapter chat request");
+
     const history = Array.isArray(messages) ? messages : [];
 
-    const systemPrompt = `You are a tutor. The student just read an explanation of Chapter ${chapterNumber}: "${chapterTitle}" from "${bookTitle}" by ${bookAuthor}.
+    const systemPrompt = `You are a focused tutor. Answer questions strictly based on the book and chapter context below.
 
-The explanation they read:
+BOOK: "${bookTitle}" by ${bookAuthor}
+BOOK SUMMARY: ${bookSummary || "(not available)"}
+
+CHAPTER ${chapterNumber}: "${chapterTitle}"
+CHAPTER EXPLANATION:
 ---
 ${chapterContent || "(not available)"}
 ---
 
-STRICT RULES:
-1. Only answer questions about this specific chapter and its ideas.
-2. Base every answer on the explanation text above and the book's content.
-3. If asked anything unrelated — your capabilities, other topics, general questions — respond only with: "I can only help with questions about this chapter."
-4. Be direct and concise. No fluff, no excessive caveats.
-5. Never discuss yourself, your training, or what you can or cannot do.`;
+RULES:
+1. Answer only questions about this book and chapter.
+2. Ground every answer in the context above — the book summary and chapter explanation.
+3. Be concise and direct. No fluff.
+4. If asked anything completely unrelated, say: "I can only help with questions about this chapter."
+5. Never talk about yourself or your capabilities.`;
 
     try {
       const contents = [

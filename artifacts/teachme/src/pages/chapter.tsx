@@ -98,6 +98,7 @@ export default function ChapterExplain() {
       chapterId: chapterId!,
       bookTitle: selectedBook.title,
       bookAuthor: selectedBook.author,
+      bookSummary: selectedBook.summary,
       chapterTitle: chapter.title,
       chapterNumber: chapter.number,
       chapterContent: explanationText,

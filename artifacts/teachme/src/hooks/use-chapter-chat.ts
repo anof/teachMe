@@ -18,12 +18,13 @@ export function useChapterChat() {
       chapterId: string;
       bookTitle: string;
       bookAuthor: string;
+      bookSummary: string;
       chapterTitle: string;
       chapterNumber: number;
       chapterContent: string;
       question: string;
     }) => {
-      const { bookId, chapterId, question, chapterContent, ...context } = params;
+      const { bookId, chapterId, question, ...context } = params;
 
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -31,7 +32,7 @@ export function useChapterChat() {
         content: question,
       };
 
-      const assistantId = `assistant-${Date.now()}`;
+      const assistantId = `assistant-${Date.now() + 1}`;
       const assistantMsg: ChatMessage = {
         id: assistantId,
         role: "assistant",
@@ -39,16 +40,17 @@ export function useChapterChat() {
         isStreaming: true,
       };
 
-      const updatedMessages = [...messagesRef.current, userMsg, assistantMsg];
-      messagesRef.current = updatedMessages;
-      setMessages([...updatedMessages]);
+      // Snapshot completed messages BEFORE adding new ones — these are the history
+      const completedHistory = messagesRef.current
+        .filter((m) => !m.isStreaming)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      // Now add the new messages to the ref and state
+      messagesRef.current = [...messagesRef.current, userMsg, assistantMsg];
+      setMessages([...messagesRef.current]);
       setIsResponding(true);
 
       try {
-        const history = messagesRef.current
-          .filter((m) => !m.isStreaming && m.id !== assistantId)
-          .map((m) => ({ role: m.role, content: m.content }));
-
         const res = await fetch(
           `/api/teachme/books/${bookId}/chapters/${chapterId}/chat`,
           {
@@ -56,8 +58,7 @@ export function useChapterChat() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...context,
-              chapterContent,
-              messages: history,
+              messages: completedHistory,
               question,
             }),
           }
@@ -89,9 +90,7 @@ export function useChapterChat() {
                 accumulated += data.content;
                 setMessages((prev) =>
                   prev.map((m) =>
-                    m.id === assistantId
-                      ? { ...m, content: accumulated }
-                      : m
+                    m.id === assistantId ? { ...m, content: accumulated } : m
                   )
                 );
               }
@@ -100,29 +99,18 @@ export function useChapterChat() {
           }
         }
 
-        // Mark streaming complete
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, isStreaming: false } : m
-          )
-        );
+        // Mark streaming complete and persist final content
+        const finalMsg = { id: assistantId, role: "assistant" as const, content: accumulated, isStreaming: false };
         messagesRef.current = messagesRef.current.map((m) =>
-          m.id === assistantId
-            ? { ...m, content: accumulated, isStreaming: false }
-            : m
+          m.id === assistantId ? finalMsg : m
         );
-      } catch (err) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  content: "Sorry, something went wrong. Please try again.",
-                  isStreaming: false,
-                }
-              : m
-          )
+        setMessages([...messagesRef.current]);
+      } catch {
+        const errMsg = { id: assistantId, role: "assistant" as const, content: "Sorry, something went wrong. Please try again.", isStreaming: false };
+        messagesRef.current = messagesRef.current.map((m) =>
+          m.id === assistantId ? errMsg : m
         );
+        setMessages([...messagesRef.current]);
       } finally {
         setIsResponding(false);
       }
