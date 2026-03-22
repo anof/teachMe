@@ -72,7 +72,7 @@ export default function BookDetail() {
               <Sparkles className="w-5 h-5 text-primary" /> Core Synthesis
             </h3>
             <p className="text-lg text-foreground/80 leading-relaxed font-light">
-              {details?.fullSummary || selectedBook.summary}
+              {selectedBook.summary}
             </p>
           </div>
         </motion.div>
