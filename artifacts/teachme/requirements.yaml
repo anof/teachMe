@@ -1,0 +1,9 @@
+packages:
+  "framer-motion": "For stunning page transitions, staggered list reveals, and micro-interactions"
+  "zustand": "For seamless cross-page state management (topic, selected books) without URL clutter"
+  "react-markdown": "To beautifully render the AI's first-principles explanations"
+  "@tailwindcss/typography": "For styling the markdown output elegantly"
+images: []
+notes:
+  - "App defaults to a stunning dark mode theme to match the 'sophisticated and calm' requirement."
+  - "Using zustand to persist state across wizard steps (Home -> Books -> Book -> Chapter)."

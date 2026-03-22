@@ -14,3 +14,64 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Find first-principles books for a topic
+ */
+export const FindBooksBody = zod.object({
+  topic: zod.string(),
+});
+
+export const FindBooksResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  author: zod.string(),
+  year: zod.string(),
+  summary: zod.string(),
+  keyPrinciples: zod.array(zod.string()),
+  difficulty: zod.string(),
+});
+export const FindBooksResponse = zod.array(FindBooksResponseItem);
+
+/**
+ * @summary Get chapter overview for a book
+ */
+export const GetBookChaptersParams = zod.object({
+  bookId: zod.coerce.string(),
+});
+
+export const GetBookChaptersBody = zod.object({
+  bookTitle: zod.string(),
+  bookAuthor: zod.string(),
+});
+
+export const GetBookChaptersResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  author: zod.string(),
+  year: zod.string(),
+  fullSummary: zod.string(),
+  chapters: zod.array(
+    zod.object({
+      id: zod.string(),
+      number: zod.number(),
+      title: zod.string(),
+      summary: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Deep dive explanation of a chapter (SSE stream)
+ */
+export const ExplainChapterParams = zod.object({
+  bookId: zod.coerce.string(),
+  chapterId: zod.coerce.string(),
+});
+
+export const ExplainChapterBody = zod.object({
+  bookTitle: zod.string(),
+  bookAuthor: zod.string(),
+  chapterTitle: zod.string(),
+  chapterNumber: zod.number(),
+});

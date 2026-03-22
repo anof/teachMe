@@ -6,4 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./book";
+export * from "./bookWithChapters";
+export * from "./chapter";
+export * from "./explainChapterBody";
+export * from "./findBooksBody";
+export * from "./getBookChaptersBody";
 export * from "./healthStatus";

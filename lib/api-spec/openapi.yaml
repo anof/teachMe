@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: teachme
+    description: TeachME learning operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /teachme/books:
+    post:
+      operationId: findBooks
+      tags: [teachme]
+      summary: Find first-principles books for a topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindBooksBody"
+      responses:
+        "200":
+          description: List of recommended books with summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+  /teachme/books/{bookId}/chapters:
+    post:
+      operationId: getBookChapters
+      tags: [teachme]
+      summary: Get chapter overview for a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetBookChaptersBody"
+      responses:
+        "200":
+          description: Book chapters with summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookWithChapters"
+  /teachme/books/{bookId}/chapters/{chapterId}/explain:
+    post:
+      operationId: explainChapter
+      tags: [teachme]
+      summary: Deep dive explanation of a chapter (SSE stream)
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExplainChapterBody"
+      responses:
+        "200":
+          description: SSE stream of chapter explanation
+          content:
+            text/event-stream: {}
 components:
   schemas:
     HealthStatus:
@@ -33,4 +106,103 @@ components:
           type: string
       required:
         - status
-
+    FindBooksBody:
+      type: object
+      properties:
+        topic:
+          type: string
+      required:
+        - topic
+    Book:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        year:
+          type: string
+        summary:
+          type: string
+        keyPrinciples:
+          type: array
+          items:
+            type: string
+        difficulty:
+          type: string
+      required:
+        - id
+        - title
+        - author
+        - year
+        - summary
+        - keyPrinciples
+        - difficulty
+    GetBookChaptersBody:
+      type: object
+      properties:
+        bookTitle:
+          type: string
+        bookAuthor:
+          type: string
+      required:
+        - bookTitle
+        - bookAuthor
+    Chapter:
+      type: object
+      properties:
+        id:
+          type: string
+        number:
+          type: integer
+        title:
+          type: string
+        summary:
+          type: string
+      required:
+        - id
+        - number
+        - title
+        - summary
+    BookWithChapters:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        year:
+          type: string
+        fullSummary:
+          type: string
+        chapters:
+          type: array
+          items:
+            $ref: "#/components/schemas/Chapter"
+      required:
+        - id
+        - title
+        - author
+        - year
+        - fullSummary
+        - chapters
+    ExplainChapterBody:
+      type: object
+      properties:
+        bookTitle:
+          type: string
+        bookAuthor:
+          type: string
+        chapterTitle:
+          type: string
+        chapterNumber:
+          type: integer
+      required:
+        - bookTitle
+        - bookAuthor
+        - chapterTitle
+        - chapterNumber

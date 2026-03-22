@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  Book,
+  BookWithChapters,
+  ExplainChapterBody,
+  FindBooksBody,
+  GetBookChaptersBody,
+  HealthStatus,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +109,264 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Find first-principles books for a topic
+ */
+export const getFindBooksUrl = () => {
+  return `/api/teachme/books`;
+};
+
+export const findBooks = async (
+  findBooksBody: FindBooksBody,
+  options?: RequestInit,
+): Promise<Book[]> => {
+  return customFetch<Book[]>(getFindBooksUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(findBooksBody),
+  });
+};
+
+export const getFindBooksMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof findBooks>>,
+    TError,
+    { data: BodyType<FindBooksBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof findBooks>>,
+  TError,
+  { data: BodyType<FindBooksBody> },
+  TContext
+> => {
+  const mutationKey = ["findBooks"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof findBooks>>,
+    { data: BodyType<FindBooksBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return findBooks(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type FindBooksMutationResult = NonNullable<
+  Awaited<ReturnType<typeof findBooks>>
+>;
+export type FindBooksMutationBody = BodyType<FindBooksBody>;
+export type FindBooksMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Find first-principles books for a topic
+ */
+export const useFindBooks = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof findBooks>>,
+    TError,
+    { data: BodyType<FindBooksBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof findBooks>>,
+  TError,
+  { data: BodyType<FindBooksBody> },
+  TContext
+> => {
+  return useMutation(getFindBooksMutationOptions(options));
+};
+
+/**
+ * @summary Get chapter overview for a book
+ */
+export const getGetBookChaptersUrl = (bookId: string) => {
+  return `/api/teachme/books/${bookId}/chapters`;
+};
+
+export const getBookChapters = async (
+  bookId: string,
+  getBookChaptersBody: GetBookChaptersBody,
+  options?: RequestInit,
+): Promise<BookWithChapters> => {
+  return customFetch<BookWithChapters>(getGetBookChaptersUrl(bookId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(getBookChaptersBody),
+  });
+};
+
+export const getGetBookChaptersMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getBookChapters>>,
+    TError,
+    { bookId: string; data: BodyType<GetBookChaptersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getBookChapters>>,
+  TError,
+  { bookId: string; data: BodyType<GetBookChaptersBody> },
+  TContext
+> => {
+  const mutationKey = ["getBookChapters"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getBookChapters>>,
+    { bookId: string; data: BodyType<GetBookChaptersBody> }
+  > = (props) => {
+    const { bookId, data } = props ?? {};
+
+    return getBookChapters(bookId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GetBookChaptersMutationResult = NonNullable<
+  Awaited<ReturnType<typeof getBookChapters>>
+>;
+export type GetBookChaptersMutationBody = BodyType<GetBookChaptersBody>;
+export type GetBookChaptersMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Get chapter overview for a book
+ */
+export const useGetBookChapters = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getBookChapters>>,
+    TError,
+    { bookId: string; data: BodyType<GetBookChaptersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof getBookChapters>>,
+  TError,
+  { bookId: string; data: BodyType<GetBookChaptersBody> },
+  TContext
+> => {
+  return useMutation(getGetBookChaptersMutationOptions(options));
+};
+
+/**
+ * @summary Deep dive explanation of a chapter (SSE stream)
+ */
+export const getExplainChapterUrl = (bookId: string, chapterId: string) => {
+  return `/api/teachme/books/${bookId}/chapters/${chapterId}/explain`;
+};
+
+export const explainChapter = async (
+  bookId: string,
+  chapterId: string,
+  explainChapterBody: ExplainChapterBody,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getExplainChapterUrl(bookId, chapterId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(explainChapterBody),
+  });
+};
+
+export const getExplainChapterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof explainChapter>>,
+    TError,
+    { bookId: string; chapterId: string; data: BodyType<ExplainChapterBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof explainChapter>>,
+  TError,
+  { bookId: string; chapterId: string; data: BodyType<ExplainChapterBody> },
+  TContext
+> => {
+  const mutationKey = ["explainChapter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof explainChapter>>,
+    { bookId: string; chapterId: string; data: BodyType<ExplainChapterBody> }
+  > = (props) => {
+    const { bookId, chapterId, data } = props ?? {};
+
+    return explainChapter(bookId, chapterId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ExplainChapterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof explainChapter>>
+>;
+export type ExplainChapterMutationBody = BodyType<ExplainChapterBody>;
+export type ExplainChapterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Deep dive explanation of a chapter (SSE stream)
+ */
+export const useExplainChapter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof explainChapter>>,
+    TError,
+    { bookId: string; chapterId: string; data: BodyType<ExplainChapterBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof explainChapter>>,
+  TError,
+  { bookId: string; chapterId: string; data: BodyType<ExplainChapterBody> },
+  TContext
+> => {
+  return useMutation(getExplainChapterMutationOptions(options));
+};

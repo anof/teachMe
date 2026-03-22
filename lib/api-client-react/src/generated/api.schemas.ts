@@ -8,3 +8,45 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface FindBooksBody {
+  topic: string;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  year: string;
+  summary: string;
+  keyPrinciples: string[];
+  difficulty: string;
+}
+
+export interface GetBookChaptersBody {
+  bookTitle: string;
+  bookAuthor: string;
+}
+
+export interface Chapter {
+  id: string;
+  number: number;
+  title: string;
+  summary: string;
+}
+
+export interface BookWithChapters {
+  id: string;
+  title: string;
+  author: string;
+  year: string;
+  fullSummary: string;
+  chapters: Chapter[];
+}
+
+export interface ExplainChapterBody {
+  bookTitle: string;
+  bookAuthor: string;
+  chapterTitle: string;
+  chapterNumber: number;
+}
