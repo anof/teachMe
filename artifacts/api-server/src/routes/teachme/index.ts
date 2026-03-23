@@ -26,9 +26,9 @@ router.post("/teachme/books", async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-5.4",
       response_format: { type: "json_object" },
-      max_tokens: 8192,
+      max_completion_tokens: 8192,
       messages: [
         {
           role: "system",
@@ -94,9 +94,9 @@ router.post("/teachme/books/:bookId/chapters", async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-5.4-mini",
       response_format: { type: "json_object" },
-      max_tokens: 8192,
+      max_completion_tokens: 8192,
       messages: [
         {
           role: "system",
@@ -170,8 +170,8 @@ router.post(
 
     try {
       const stream = await openai.chat.completions.create({
-        model: "gpt-4.1-mini",
-        max_tokens: 8192,
+        model: "gpt-5.4-mini",
+        max_completion_tokens: 8192,
         stream: true,
         messages: [
           {
@@ -261,8 +261,8 @@ RULES:
       ];
 
       const stream = await openai.chat.completions.create({
-        model: "gpt-4.1-mini",
-        max_tokens: 2048,
+        model: "gpt-5.4-mini",
+        max_completion_tokens: 2048,
         stream: true,
         messages: chatMessages,
       });

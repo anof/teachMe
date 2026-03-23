@@ -15,7 +15,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
-- **AI**: OpenAI via `openai` npm package (`OPENAI_API_KEY` secret); models: `gpt-4.1` (book search), `gpt-4.1-mini` (chapters, explain, chat)
+- **AI**: OpenAI via `openai` npm package (`OPENAI_API_KEY` secret); models: `gpt-5.4` (book search), `gpt-5.4-mini` (chapters, explain, chat)
 
 ## Structure
 
