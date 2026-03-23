@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
-import { ai } from "@workspace/integrations-gemini-ai";
+import OpenAI from "openai";
 import {
   FindBooksBody,
   GetBookChaptersBody,
   ExplainChapterBody,
 } from "@workspace/api-zod";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const router: IRouter = Router();
 
@@ -23,14 +25,14 @@ router.post("/teachme/books", async (req, res) => {
       : "";
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: [
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      response_format: { type: "json_object" },
+      max_tokens: 8192,
+      messages: [
         {
-          role: "user",
-          parts: [
-            {
-              text: `You are a learning assistant that recommends books on "${topic}" from first principles.
+          role: "system",
+          content: `You are a learning assistant that recommends books on "${topic}" from first principles.
 
 SELECTION CRITERIA (in strict priority order):
 1. RECENCY: Strongly prefer books published in 2020 or later. Books from 2015–2019 are acceptable. Only include older books if they are truly irreplaceable classics with no modern equivalent.
@@ -40,34 +42,35 @@ SELECTION CRITERIA (in strict priority order):
 
 Find exactly 5 books matching these criteria. Return them ordered from most recent to least recent.${excludeClause}
 
-Return a JSON array with exactly this structure (no markdown, just raw JSON):
-[
-  {
-    "id": "unique-slug-id",
-    "title": "Book Title",
-    "author": "Author Name",
-    "year": "Publication Year",
-    "summary": "2-3 sentence summary explaining what this book teaches, why it builds understanding from first principles, and what makes it exceptional",
-    "keyPrinciples": ["Principle 1", "Principle 2", "Principle 3"],
-    "difficulty": "Beginner|Intermediate|Advanced"
-  }
-]
+Return a JSON object with a "books" key containing an array with exactly this structure:
+{
+  "books": [
+    {
+      "id": "unique-slug-id",
+      "title": "Book Title",
+      "author": "Author Name",
+      "year": "Publication Year",
+      "summary": "2-3 sentence summary explaining what this book teaches, why it builds understanding from first principles, and what makes it exceptional",
+      "keyPrinciples": ["Principle 1", "Principle 2", "Principle 3"],
+      "difficulty": "Beginner|Intermediate|Advanced"
+    }
+  ]
+}
 
-Only return valid JSON, no other text.`,
-            },
-          ],
+Only return valid JSON.`,
+        },
+        {
+          role: "user",
+          content: `Find 5 first-principles books on: ${topic}`,
         },
       ],
-      config: {
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-      },
     });
 
-    const text = response.text ?? "[]";
+    const text = response.choices[0]?.message?.content ?? '{"books":[]}';
     let books;
     try {
-      books = JSON.parse(text);
+      const parsed = JSON.parse(text);
+      books = Array.isArray(parsed) ? parsed : (parsed.books ?? []);
     } catch {
       books = [];
     }
@@ -90,20 +93,22 @@ router.post("/teachme/books/:bookId/chapters", async (req, res) => {
   const { bookId } = req.params;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      response_format: { type: "json_object" },
+      max_tokens: 8192,
+      messages: [
+        {
+          role: "system",
+          content: `You are a learning assistant with deep knowledge of books. Return only valid JSON.`,
+        },
         {
           role: "user",
-          parts: [
-            {
-              text: `You are a learning assistant with deep knowledge of books.
-
-For the book "${bookTitle}" by ${bookAuthor}, provide:
+          content: `For the book "${bookTitle}" by ${bookAuthor}, provide:
 1. A comprehensive full summary (4-6 sentences covering the main thesis, key ideas, and why it matters)
 2. A list of the actual chapters or major sections of this book
 
-Return a JSON object with exactly this structure (no markdown, just raw JSON):
+Return a JSON object with exactly this structure:
 {
   "id": "${bookId}",
   "title": "${bookTitle}",
@@ -120,21 +125,12 @@ Return a JSON object with exactly this structure (no markdown, just raw JSON):
   ]
 }
 
-Use the actual chapter structure of the book if known. If you're unsure of exact chapters, create logical sections that accurately represent the book's content flow. Include 6-15 chapters/sections.
-
-Only return valid JSON, no other text.`,
-            },
-          ],
+Use the actual chapter structure of the book if known. If you're unsure of exact chapters, create logical sections that accurately represent the book's content flow. Include 6-15 chapters/sections.`,
         },
       ],
-      config: {
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 0 },
-      },
     });
 
-    const text = response.text ?? "{}";
+    const text = response.choices[0]?.message?.content ?? "{}";
     let bookData;
     try {
       bookData = JSON.parse(text);
@@ -173,16 +169,18 @@ router.post(
     res.setHeader("Access-Control-Allow-Origin", "*");
 
     try {
-      const stream = await ai.models.generateContentStream({
-        model: "gemini-3-flash-preview",
-        contents: [
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        max_tokens: 8192,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: `You are a sharp, concise teacher who explains ideas from first principles. No padding, no filler.`,
+          },
           {
             role: "user",
-            parts: [
-              {
-                text: `You are a sharp, concise teacher who explains ideas from first principles. No padding, no filler.
-
-Explain Chapter ${chapterNumber}: "${chapterTitle}" from "${bookTitle}" by ${bookAuthor}.
+            content: `Explain Chapter ${chapterNumber}: "${chapterTitle}" from "${bookTitle}" by ${bookAuthor}.
 
 Rules:
 - Open directly with the core problem or insight — no preamble
@@ -192,15 +190,12 @@ Rules:
 - Close with the single most important takeaway in one sentence
 
 Write in tight prose. Target 300-400 words. Every sentence must earn its place.`,
-              },
-            ],
           },
         ],
-        config: { maxOutputTokens: 8192 },
       });
 
       for await (const chunk of stream) {
-        const text = chunk.text;
+        const text = chunk.choices[0]?.delta?.content;
         if (text) {
           res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
         }
@@ -256,27 +251,24 @@ RULES:
 5. Never talk about yourself or your capabilities.`;
 
     try {
-      // Embed the full context directly into the first user message so it is
-      // guaranteed to be seen regardless of whether systemInstruction is supported.
-      const firstUserText = `${systemPrompt}\n\n---\n\nStudent question: ${history.length === 0 ? question : history[0].content}`;
+      const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        ...history.map((m: { role: string; content: string }) => ({
+          role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
+          content: m.content,
+        })),
+        { role: "user", content: question },
+      ];
 
-      const historyTurns = history.map((m: { role: string; content: string }, i: number) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: i === 0 ? firstUserText : m.content }],
-      }));
-
-      const contents = history.length === 0
-        ? [{ role: "user", parts: [{ text: firstUserText }] }]
-        : [...historyTurns, { role: "user", parts: [{ text: question }] }];
-
-      const stream = await ai.models.generateContentStream({
-        model: "gemini-3-flash-preview",
-        contents,
-        config: { maxOutputTokens: 2048 },
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        max_tokens: 2048,
+        stream: true,
+        messages: chatMessages,
       });
 
       for await (const chunk of stream) {
-        const text = chunk.text;
+        const text = chunk.choices[0]?.delta?.content;
         if (text) {
           res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
         }
