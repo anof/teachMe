@@ -10,6 +10,120 @@ function appBaseUrl(req: Request): string {
 }
 
 /**
+ * GET /api/v1
+ *
+ * Returns the full API definition — endpoints, parameters, and example responses.
+ */
+router.get("/v1", (req, res) => {
+  const base = appBaseUrl(req);
+  res.json({
+    name: "TeachME API",
+    version: "1.0",
+    baseUrl: `${base}/api/v1`,
+    description: "Discover first-principles books on any topic and explore their chapters.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/v1/explore",
+        description: "Find 5 first-principles books on a topic. Returns book details and links.",
+        body: { topic: "string — the subject you want to learn (e.g. 'stoicism', 'investing')" },
+        returns: {
+          topic: "string",
+          count: "number",
+          books: [
+            {
+              id: "string — unique book slug",
+              title: "string",
+              author: "string",
+              year: "string",
+              difficulty: "Beginner | Intermediate | Advanced",
+              summary: "string",
+              keyPrinciples: ["string"],
+              links: {
+                webApp: "URL — open this book in TeachME (clickable)",
+                chaptersApi: "URL — call this to get the book's chapters",
+              },
+            },
+          ],
+        },
+        example: {
+          curl: `curl -X POST ${base}/api/v1/explore -H "Content-Type: application/json" -d '{"topic":"stoicism"}'`,
+        },
+      },
+      {
+        method: "GET",
+        path: "/api/v1/books/:bookId/chapters",
+        description: "Get the full summary and all chapters for a book.",
+        params: {
+          bookId: "string — the book id from the explore response",
+          title: "query param — the book title",
+          author: "query param — the book author",
+        },
+        returns: {
+          id: "string",
+          title: "string",
+          author: "string",
+          year: "string",
+          fullSummary: "string",
+          chapterCount: "number",
+          chapters: [
+            {
+              id: "string",
+              number: "number",
+              title: "string",
+              summary: "string",
+              links: {
+                webApp: "URL — open this chapter in TeachME (clickable)",
+              },
+            },
+          ],
+          links: { webApp: "URL — open this book in TeachME (clickable)" },
+        },
+        example: {
+          curl: `curl "${base}/api/v1/books/lessons-in-stoicism-2020/chapters?title=Lessons%20in%20Stoicism&author=John%20Sellars"`,
+        },
+      },
+      {
+        method: "GET",
+        path: "/api/v1/open/books/:bookId",
+        description: "Redirect directly to the TeachME book page. Use this as a clickable link.",
+        params: {
+          bookId: "string — the book id from the explore response",
+          title: "query param — the book title",
+          author: "query param — the book author",
+          year: "query param (optional) — publication year",
+          difficulty: "query param (optional) — difficulty level",
+        },
+        example: {
+          url: `${base}/api/v1/open/books/lessons-in-stoicism-2020?title=Lessons%20in%20Stoicism&author=John%20Sellars&year=2020&difficulty=Beginner`,
+        },
+      },
+    ],
+  });
+});
+
+/**
+ * GET /api/v1/open/books/:bookId
+ *
+ * Redirect shortcut — opens a book directly in the TeachME UI.
+ * Use this URL as a clickable link in your other app.
+ */
+router.get("/v1/open/books/:bookId", (req, res) => {
+  const { bookId } = req.params;
+  const { title, author, year, difficulty } = req.query as Record<string, string>;
+  const base = appBaseUrl(req);
+
+  const params = new URLSearchParams();
+  if (title) params.set("title", title);
+  if (author) params.set("author", author);
+  if (year) params.set("year", year);
+  if (difficulty) params.set("difficulty", difficulty);
+
+  const qs = params.toString();
+  res.redirect(302, `${base}/books/${bookId}${qs ? `?${qs}` : ""}`);
+});
+
+/**
  * POST /api/v1/explore
  *
  * Body: { "topic": "investing" }
