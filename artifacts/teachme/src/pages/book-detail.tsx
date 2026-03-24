@@ -98,14 +98,14 @@ export default function BookDetail() {
             by {book.author}{book.year ? `, ${book.year}` : ""}
           </p>
 
-          {book.summary && (
+          {(book.summary || details?.fullSummary) && (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
               <h3 className="text-lg font-medium text-foreground mb-3 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" /> Core Synthesis
               </h3>
               <p className="text-lg text-foreground/80 leading-relaxed font-light">
-                {book.summary}
+                {book.summary || details?.fullSummary}
               </p>
             </div>
           )}
