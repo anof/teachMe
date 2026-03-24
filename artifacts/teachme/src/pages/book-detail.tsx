@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
 import { BookOpen, Sparkles, ArrowRight, Layers } from "lucide-react";
@@ -23,26 +23,27 @@ export default function BookDetail() {
 
   const details = id ? bookDetails[id] : null;
 
-  // If opened directly via link (no selectedBook in store), bootstrap from query params
+  // Bootstrap from query params when the stored book doesn't match this URL's book ID.
+  // This handles: first visit (no store), and switching between different direct links.
   const queryParams = getQueryParams();
-  const bookFromQuery: Book | null =
-    !selectedBook && queryParams.title
-      ? {
-          id: id ?? "",
-          title: queryParams.title,
-          author: queryParams.author ?? "",
-          year: queryParams.year ?? "",
-          summary: "",
-          keyPrinciples: [],
-          difficulty: (queryParams.difficulty as Book["difficulty"]) ?? "Intermediate",
-        }
-      : null;
+  const needsBootstrap = selectedBook?.id !== id && !!queryParams.title;
+  const bookFromQuery: Book | null = needsBootstrap
+    ? {
+        id: id ?? "",
+        title: queryParams.title,
+        author: queryParams.author ?? "",
+        year: queryParams.year ?? "",
+        summary: "",
+        keyPrinciples: [],
+        difficulty: (queryParams.difficulty as Book["difficulty"]) ?? "Intermediate",
+      }
+    : null;
 
-  const book = selectedBook ?? bookFromQuery;
+  const book = (selectedBook?.id === id ? selectedBook : null) ?? bookFromQuery;
 
   useEffect(() => {
-    // If we bootstrapped from query params, persist the synthetic book into the store
-    if (!selectedBook && bookFromQuery) {
+    // Sync the correct book into the store whenever the URL changes
+    if (bookFromQuery) {
       setSelectedBook(bookFromQuery);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
