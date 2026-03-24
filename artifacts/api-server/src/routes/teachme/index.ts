@@ -284,4 +284,46 @@ RULES:
   }
 );
 
+/**
+ * GET /api/teachme/books/:bookId/synopsis
+ *
+ * Returns a quick 2-3 sentence synopsis for a book.
+ * Used when the book is opened directly via URL and has no cached summary.
+ * Query params: title, author
+ */
+router.get("/teachme/books/:bookId/synopsis", async (req, res) => {
+  const { title, author } = req.query as Record<string, string>;
+
+  if (!title || !author) {
+    res.status(400).json({ error: "title and author query params are required" });
+    return;
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.4-mini",
+      max_completion_tokens: 200,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write crisp, insightful book synopses. Be direct and concise — 2 sentences max. Focus on what makes the book uniquely valuable for building first-principles understanding.",
+        },
+        {
+          role: "user",
+          content: `Write a 2-sentence synopsis for "${title}" by ${author}.`,
+        },
+      ],
+    });
+
+    const synopsis =
+      completion.choices[0]?.message?.content?.trim() ?? "";
+
+    res.json({ synopsis });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching synopsis");
+    res.status(500).json({ error: "Failed to fetch synopsis" });
+  }
+});
+
 export default router;
