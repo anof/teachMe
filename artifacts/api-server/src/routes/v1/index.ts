@@ -98,7 +98,7 @@ Return this JSON structure:
       summary: book.summary,
       keyPrinciples: book.keyPrinciples ?? [],
       links: {
-        webApp: `${base}/books/${book.id}`,
+        webApp: `${base}/books/${book.id}?title=${encodeURIComponent(book.title)}&author=${encodeURIComponent(book.author)}&year=${encodeURIComponent(book.year)}&difficulty=${encodeURIComponent(book.difficulty)}`,
         chaptersApi: `${base}/api/v1/books/${book.id}/chapters?title=${encodeURIComponent(book.title)}&author=${encodeURIComponent(book.author)}`,
       },
     }));

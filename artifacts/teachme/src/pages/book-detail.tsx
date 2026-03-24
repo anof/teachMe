@@ -5,19 +5,51 @@ import { BookOpen, Sparkles, ArrowRight, Layers } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
 import { Layout } from "@/components/layout";
 import { useGetBookChapters } from "@workspace/api-client-react";
+import type { Book } from "@workspace/api-client-react";
+
+function getQueryParams(): Record<string, string> {
+  const params: Record<string, string> = {};
+  new URLSearchParams(window.location.search).forEach((v, k) => { params[k] = v; });
+  return params;
+}
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   
-  const { selectedBook, bookDetails, setBookDetails } = useAppStore();
+  const { selectedBook, bookDetails, setBookDetails, setSelectedBook } = useAppStore();
   const getChapters = useGetBookChapters();
   const fetchedRef = useRef<string | null>(null);
 
   const details = id ? bookDetails[id] : null;
 
+  // If opened directly via link (no selectedBook in store), bootstrap from query params
+  const queryParams = getQueryParams();
+  const bookFromQuery: Book | null =
+    !selectedBook && queryParams.title
+      ? {
+          id: id ?? "",
+          title: queryParams.title,
+          author: queryParams.author ?? "",
+          year: queryParams.year ?? "",
+          summary: "",
+          keyPrinciples: [],
+          difficulty: (queryParams.difficulty as Book["difficulty"]) ?? "Intermediate",
+        }
+      : null;
+
+  const book = selectedBook ?? bookFromQuery;
+
   useEffect(() => {
-    if (!selectedBook) {
+    // If we bootstrapped from query params, persist the synthetic book into the store
+    if (!selectedBook && bookFromQuery) {
+      setSelectedBook(bookFromQuery);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (!book) {
       setLocation("/");
       return;
     }
@@ -28,8 +60,8 @@ export default function BookDetail() {
         { 
           bookId: id, 
           data: { 
-            bookTitle: selectedBook.title, 
-            bookAuthor: selectedBook.author 
+            bookTitle: book.title, 
+            bookAuthor: book.author,
           } 
         },
         {
@@ -40,9 +72,9 @@ export default function BookDetail() {
       );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, selectedBook?.id, details]);
+  }, [id, book?.id, details]);
 
-  if (!selectedBook) return null;
+  if (!book) return null;
 
   const isPending = getChapters.isPending && !details;
 
@@ -56,25 +88,27 @@ export default function BookDetail() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-muted-foreground mb-6">
             <BookOpen className="w-4 h-4 text-primary" />
-            <span>Mastering {selectedBook.title}</span>
+            <span>Mastering {book.title}</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl font-serif text-foreground mb-4">
-            {selectedBook.title}
+            {book.title}
           </h1>
           <p className="text-xl text-primary font-serif italic mb-8">
-            by {selectedBook.author}, {selectedBook.year}
+            by {book.author}{book.year ? `, ${book.year}` : ""}
           </p>
 
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-            <h3 className="text-lg font-medium text-foreground mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" /> Core Synthesis
-            </h3>
-            <p className="text-lg text-foreground/80 leading-relaxed font-light">
-              {selectedBook.summary}
-            </p>
-          </div>
+          {book.summary && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+              <h3 className="text-lg font-medium text-foreground mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" /> Core Synthesis
+              </h3>
+              <p className="text-lg text-foreground/80 leading-relaxed font-light">
+                {book.summary}
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {isPending ? (
