@@ -46,12 +46,6 @@ export function Layout({ children, showBack, backTo, onBack }: LayoutProps) {
           href="https://github.com/anof/teachMe"
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => {
-            e.preventDefault();
-            const url = "https://github.com/anof/teachMe";
-            const w = window.open(url, "_blank", "noopener,noreferrer");
-            if (!w) window.location.href = url;
-          }}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
           aria-label="View source on GitHub"
         >
