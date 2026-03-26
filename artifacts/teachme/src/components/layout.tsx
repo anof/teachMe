@@ -42,17 +42,20 @@ export function Layout({ children, showBack, backTo, onBack }: LayoutProps) {
             <span className="font-serif text-xl tracking-wide text-foreground">TeachME</span>
           </Link>
         </div>
-        <a
-          href="https://github.com/anof/teachMe"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
-          aria-label="View source on GitHub"
-        >
-          <Github className="w-4 h-4" />
-          <span className="hidden sm:inline text-sm">GitHub</span>
-        </a>
       </header>
+
+      {/* Fixed GitHub badge — outside all overflow/z-index/layout containers */}
+      <a
+        href="https://github.com/anof/teachMe"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ cursor: "pointer", touchAction: "manipulation" }}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-sm text-foreground backdrop-blur-sm hover:bg-white/20 transition-colors shadow-lg"
+        aria-label="View source on GitHub"
+      >
+        <Github className="w-4 h-4" />
+        <span>GitHub</span>
+      </a>
 
       <main className="flex-1 flex flex-col w-full max-w-5xl mx-auto px-6 pb-24 z-10 relative">
         {children}
