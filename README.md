@@ -2,7 +2,7 @@
 
 **First-principles learning, powered by AI.** Enter any topic → get the foundational books → explore chapters → deep-dive with streaming explanations → ask questions.
 
-Live at **[teach-me.replit.app](https://teach-me.replit.app)**
+Live at **[teach-me.replit.app](https://teach-me.replit.app)** *(until I run out of tokens)*
 
 ---
 
