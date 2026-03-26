@@ -42,16 +42,14 @@ export function Layout({ children, showBack, backTo, onBack }: LayoutProps) {
             <span className="font-serif text-xl tracking-wide text-foreground">TeachME</span>
           </Link>
         </div>
-        <a
-          href="https://github.com/anof/teachMe"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+        <button
+          onClick={() => window.open("https://github.com/anof/teachMe", "_blank", "noopener,noreferrer")}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
           aria-label="View source on GitHub"
         >
           <Github className="w-4 h-4" />
           <span className="hidden sm:inline text-sm">GitHub</span>
-        </a>
+        </button>
       </header>
 
       <main className="flex-1 flex flex-col w-full max-w-5xl mx-auto px-6 pb-24 z-10 relative">
